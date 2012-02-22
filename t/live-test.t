@@ -18,7 +18,7 @@ $mech->get_ok('http://localhost/', 'get main page');
 $mech->content_like(qr/it works/i, 'see if it has our text');
 $mech->follow_link_ok({url_regex => qr/\.css$/}, "Can follow the css link");
 
-diag($mech->content);
+is($mech->ct, "text/css", "right content type");
 
 $mech->content_contains("h1 span");
 $mech->content_contains("font-family:");
