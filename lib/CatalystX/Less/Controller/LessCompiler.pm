@@ -1,10 +1,18 @@
 package CatalystX::Less::Controller::LessCompiler;
+#ABSTRACT: Compile a bunch of less files to a css file
 use Moose;
 use namespace::autoclean;
 
 BEGIN { extends 'Catalyst::Controller' };
 use CSS::LESSp;
 use Path::Class::File qw();
+
+=method less file;file2
+
+Will try to locate the less directory (default is root/static/less), and then
+compile and concatenate the less into css.
+
+=cut
 
 sub less : Path('') Args(1) {
     my ($self, $c, $files) = @_;
