@@ -53,7 +53,8 @@ sub _find_less_file {
     }
 }
 
-
+# Just to make sure nothing else gets done
+sub end : Private {}
 1;
 
 
