@@ -17,6 +17,12 @@ set up a less compiler endpoint in the app. This end point compiles the less
 into css on request. In our production environment we just cache this with
 varnish, so the added time isn't an issue.
 
+=head1 WORKING WITH OTHERS
+
+If we find the (albeit private) method C<_locate_static_file> on C<$c>, we will
+use this to locate static files. This makes sure we search all the folders that
+the static plugin does.
+
 =cut
 
 

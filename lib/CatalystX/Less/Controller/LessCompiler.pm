@@ -28,7 +28,7 @@ sub less : Path('') Args(1) {
     $base_folder = $c->path_to($base_folder) unless $base_folder =~ m|^/|;
 
     foreach my $file (@files) {
-        my $full = Path::Class::File->new($base_folder, $file);
+        my $full = $self->_find_less_file($c, $file, $base_folder);
         unless (-f $full) {
             $c->log->warn("LESS: $full not found, skipping");
             next;
@@ -38,6 +38,22 @@ sub less : Path('') Args(1) {
         $c->res->print(CSS::LESSp->parse(join("\n", $in->getlines)));
     }
 }
+
+
+sub _find_less_file {
+    my ($self, $c, $file, $base_folder) = @_;
+
+    if ($c->can('_locate_static_file')) {
+        # Enter Static::Simple mode!
+        # XXX: Hardcoded, BAD!
+        return Path::Class::File->new($c->_locate_static_file('static/less/' . $file));
+    } else {
+        # old skool!
+        return Path::Class::File->new($base_folder, $file);
+    }
+}
+
+
 1;
 
 
