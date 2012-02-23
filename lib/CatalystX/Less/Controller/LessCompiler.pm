@@ -14,6 +14,14 @@ compile and concatenate the less into css.
 
 =cut
 
+sub less_versioned : Path('') Args(2) {
+    my ($self, $c, $version, $files) = @_;
+    if ("$version" ne $c->VERSION) {
+        $c->log->debug("Version missmatch in less compiler, old cached link?");
+    }
+    $c->forward('less', [$files]);
+
+}
 sub less : Path('') Args(1) {
     my ($self, $c, $files) = @_;
     $files =~ s/\.css$//;
@@ -22,10 +30,16 @@ sub less : Path('') Args(1) {
     my $cfg = $c->config->{'CatalystX::Less'};
 
     $c->res->content_type('text/css');
+    if ($cfg->{max_age}) {
+        $c->res->header('Cache-Control' => 's-maxage=' . $cfg->{max_age});
+    }
+
+    # TODO: Put in support for using $c->cache if it exists
     my $base_folder = $cfg->{base_folder} || 'root/static/less/';
 
     # If the config is absolute path, leave it alone
     $base_folder = $c->path_to($base_folder) unless $base_folder =~ m|^/|;
+
 
     foreach my $file (@files) {
         my $full = $self->_find_less_file($c, $file, $base_folder);

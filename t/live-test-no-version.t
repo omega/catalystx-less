@@ -6,7 +6,7 @@ use Test::More;
 
 # setup library path
 use FindBin qw($Bin);
-use lib "$Bin/lib";
+use lib "$Bin/lib-no-version";
 
 # make sure testapp works
 use ok 'TestApp';
@@ -18,10 +18,13 @@ $mech->get_ok('http://localhost/', 'get main page');
 $mech->content_like(qr/it works/i, 'see if it has our text');
 $mech->follow_link_ok({url_regex => qr/\.css$/}, "Can follow the css link");
 
+unlike($mech->uri, qr/0.01/, "no version when disabled");
+unlike($mech->uri, qr|less//|, "no double slashes");
+
 is($mech->ct, "text/css", "right content type");
-like($mech->uri, qr/0.01/, "version in url by default");
 
 $mech->content_contains("h1 span");
 $mech->content_contains("font-family:");
 
 done_testing;
+

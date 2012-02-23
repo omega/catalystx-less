@@ -8,6 +8,10 @@ use Test::More;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
 
+BEGIN {
+    $ENV{TESTAPP_CONFIG} = '{ "CatalystX::Less" => { "max_age" => 3600 } }';
+};
+
 # make sure testapp works
 use ok 'TestApp';
 
@@ -19,9 +23,10 @@ $mech->content_like(qr/it works/i, 'see if it has our text');
 $mech->follow_link_ok({url_regex => qr/\.css$/}, "Can follow the css link");
 
 is($mech->ct, "text/css", "right content type");
-like($mech->uri, qr/0.01/, "version in url by default");
+is($mech->res->header('Cache-Control'), 's-maxage=3600', "right cache-control");
 
 $mech->content_contains("h1 span");
 $mech->content_contains("font-family:");
 
 done_testing;
+

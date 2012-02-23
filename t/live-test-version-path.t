@@ -8,6 +8,10 @@ use Test::More;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
 
+BEGIN {
+    $ENV{TESTAPP_CONFIG} = '{ "CatalystX::Less" => { "version_path" => 0 } }';
+};
+
 # make sure testapp works
 use ok 'TestApp';
 
@@ -18,10 +22,11 @@ $mech->get_ok('http://localhost/', 'get main page');
 $mech->content_like(qr/it works/i, 'see if it has our text');
 $mech->follow_link_ok({url_regex => qr/\.css$/}, "Can follow the css link");
 
+unlike($mech->uri, qr/0.01/, "no version when disabled");
 is($mech->ct, "text/css", "right content type");
-like($mech->uri, qr/0.01/, "version in url by default");
 
 $mech->content_contains("h1 span");
 $mech->content_contains("font-family:");
 
 done_testing;
+
