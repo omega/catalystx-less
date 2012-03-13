@@ -14,7 +14,7 @@ compile and concatenate the less into css.
 
 =cut
 
-sub less_versioned : Path('') Args(2) {
+sub less_versioned : Path('/static/less') Args(2) {
     my ($self, $c, $version, $files) = @_;
     if ("$version" ne $c->VERSION) {
         $c->log->debug("Version missmatch in less compiler, old cached link?");
@@ -22,7 +22,7 @@ sub less_versioned : Path('') Args(2) {
     $c->forward('less', [$files]);
 
 }
-sub less : Path('') Args(1) {
+sub less : Path('/static/less') Args(1) {
     my ($self, $c, $files) = @_;
     $files =~ s/\.css$//;
     my @files = map { $_ . '.less' } split(";", $files);
