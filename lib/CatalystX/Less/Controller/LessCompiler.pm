@@ -41,7 +41,6 @@ sub less_to_css : Path('/static/less_to_css') Args(1) {
     # If the config is absolute path, leave it alone
     $base_folder = $c->path_to($base_folder) unless $base_folder =~ m|^/|;
 
-
     foreach my $file (@files) {
         my $full = $self->_find_less_file($c, $file, $base_folder);
         unless (-f $full) {

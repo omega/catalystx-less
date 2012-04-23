@@ -19,10 +19,7 @@ use_ok('TestApp');
 # a live test against TestApp, the test application
 use Test::WWW::Mechanize::Catalyst 'TestApp';
 
-# skip if no lessc
-
 my $mech = Test::WWW::Mechanize::Catalyst->new;
-
 
 $mech->get_ok('http://localhost/', 'get main page');
 note($mech->content);

@@ -8,6 +8,9 @@ use Test::More;
 use FindBin qw($Bin);
 use lib "$Bin/lib";
 
+use Spawn::Safe;
+if(spawn_safe({ argv => [qw{ lessc }], timeout => 2 })->{error}) { plan skip_all => 'Cannot run lessc so tests are meaningless.'; }
+
 BEGIN {
     $ENV{TESTAPP_CONFIG} = '{ "CatalystX::Less" => { "max_age" => 3600 } }';
 };
