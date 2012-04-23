@@ -4,7 +4,7 @@ use Moose;
 use namespace::autoclean;
 
 BEGIN { extends 'Catalyst::Controller' };
-use CSS::LESSp;
+use Spawn::Safe;
 use Path::Class::File qw();
 
 =method less file;file2
@@ -14,16 +14,17 @@ compile and concatenate the less into css.
 
 =cut
 
-sub less_versioned : Path('/static/less') Args(2) {
+sub less_to_css_versioned : Path('/static/less_to_css') Args(2) {
     my ($self, $c, $version, $files) = @_;
     if ("$version" ne $c->VERSION) {
         $c->log->debug("Version missmatch in less compiler, old cached link?");
     }
-    $c->forward('less', [$files]);
+    $c->forward('less_to_css', [$files]);
 
 }
-sub less : Path('/static/less') Args(1) {
+sub less_to_css : Path('/static/less_to_css') Args(1) {
     my ($self, $c, $files) = @_;
+
     $files =~ s/\.css$//;
     my @files = map { $_ . '.less' } split(";", $files);
     # compile and return
@@ -47,12 +48,10 @@ sub less : Path('/static/less') Args(1) {
             $c->log->warn("LESS: $full not found, skipping");
             next;
         }
-
-        my $in = $full->openr;
-        $c->res->print(CSS::LESSp->parse(join("\n", $in->getlines)));
+	    my $results = spawn_safe({ argv => ['lessc', $full], timeout => 2 });
+        $c->res->print($results->{stdout});
     }
 }
-
 
 sub _find_less_file {
     my ($self, $c, $file, $base_folder) = @_;

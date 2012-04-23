@@ -13,7 +13,7 @@ BEGIN {
 };
 
 # make sure testapp works
-use ok 'TestApp';
+use_ok('TestApp');
 
 # a live test against TestApp, the test application
 use Test::WWW::Mechanize::Catalyst 'TestApp';

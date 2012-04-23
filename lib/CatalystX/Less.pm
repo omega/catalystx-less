@@ -65,6 +65,7 @@ set to false
 use Moose::Role;
 use namespace::autoclean;
 use CatalystX::InjectComponent;
+use Spawn::Safe;
 
 after 'setup_components' => sub {
     my $class = shift;
@@ -93,14 +94,45 @@ sub uri_for_combined_less {
     my $encoded = join(";", (map { s/\.less$//; $_;} @lesses));
 
     push(@args, $encoded . ".css");
-    my $action = $c->controller('Less')->action_for('less');
+    
+    my $action = $c->controller('Less')->action_for('less_to_css');
     if ($c->VERSION and (not defined($cfg->{version_path}) or $cfg->{version_path})) {
-        $action = $c->controller('Less')->action_for('less_versioned');
+        $action = $c->controller('Less')->action_for('less_to_css_versioned');
         unshift(@args, $c->VERSION);
     }
 
     my $uri = $c->uri_for($action,@args);
     return $uri;
+    
+}
+
+sub less_for {
+	my $c = shift;
+	my $ret;
+	
+	if(_has_lessc($c)) {
+		$ret = "<link href=\"". $c->uri_for_combined_less(@_) ."\" type=\"text/css\">";
+	} else {
+		# TODO: configurable?
+		$ret = "<script src=\"https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js\" type=\"text/javascript\"></script>";
+	    foreach my $less (@_) {
+	    	# TODO: hardcoded
+	    	$ret = $ret . "<link href=\"". $c->uri_for("/static/less/".$less) ."\" type=\"text/less\">";
+	    }
+	}
+	return $ret;
+}
+
+sub _has_lessc {
+    my $c = shift;
+    my $results = spawn_safe({ argv => [qw{ lessc }], timeout => 2 });
+    my $ret = 1;
+    
+    if($results->{error}) {
+    	$ret = 0;
+    	$c->log->warn('Cannot use lessc: '.$results->{error});
+    }
+    return $ret;
 }
 
 1;
