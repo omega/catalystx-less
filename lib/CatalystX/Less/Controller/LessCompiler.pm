@@ -47,7 +47,7 @@ sub less_to_css : Path('/static/less_to_css') Args(1) {
             $c->log->warn("LESS: $full not found, skipping");
             next;
         }
-	    my $results = spawn_safe({ argv => ['lessc', $full], timeout => 2 });
+        my $results = spawn_safe({ argv => ['lessc', $full], timeout => 2 });
         $c->res->print($results->{stdout});
     }
 }
