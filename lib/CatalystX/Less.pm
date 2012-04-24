@@ -8,8 +8,8 @@ package CatalystX::Less;
 
     # in root/wrapper.tt
     <link rel="stylesheet" href="[% c.uri_for_combined_less('base.less', 'fonts.less') %]"></link>
-    
-    # or 
+
+    # or
     [% c.less_for('base.less', 'fonts.less') %]
 
 =head1 JUSTIFICATION
@@ -74,6 +74,22 @@ use Spawn::Safe;
 
 after 'setup_components' => sub {
     my $class = shift;
+    my $impl;
+    if ($class->config->{'CatalystX::Less'}->{no_lessc}) {
+        $class->log->debug("Not using lessc, per config") if $class->debug;
+        $impl = "_less_for_no_lessc";
+    } elsif(my $error = spawn_safe({ argv => [qw{ lessc }], timeout => 2 })->{error}) {
+        $class->log->debug("COuld not use lessc: " . $error) if $class->debug;
+        $impl = "_less_for_no_lessc";
+    } else {
+        $class->log->debug("Using lessc!") if $class->debug;
+        $impl = "_less_for_lessc";
+    }
+
+    {
+        no strict 'refs';
+        *{$class . "::less_for"} = \*{$class . "::${impl}"};
+    }
     CatalystX::InjectComponent->inject(
         into => $class,
         component => 'CatalystX::Less::Controller::LessCompiler',
@@ -99,7 +115,7 @@ sub uri_for_combined_less {
     my $encoded = join(";", (map { s/\.less$//; $_;} @lesses));
 
     push(@args, $encoded . ".css");
-    
+
     my $action = $c->controller('Less')->action_for('less_to_css');
     if ($c->VERSION and (not defined($cfg->{version_path}) or $cfg->{version_path})) {
         $action = $c->controller('Less')->action_for('less_to_css_versioned');
@@ -108,44 +124,26 @@ sub uri_for_combined_less {
 
     my $uri = $c->uri_for($action,@args);
     return $uri;
-    
+
 }
 
-sub less_for {
-	my $c = shift;
-	my $ret;
-	my $cfg = $c->config->{'CatalystX::Less'};
-	
-	if(not defined($cfg->{node_js_path})) {
-		$c->config->{'CatalystX::Less'}{node_js_path} = "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js";
-	}
-	
-	if(_has_lessc($c)) {
-		$ret = "<link href=\"". $c->uri_for_combined_less(@_) ."\" type=\"text/css\">";
-	} else {
-		# TODO: configurable?
-		$ret = "<script src=\"".$cfg->{node_js_path}."\" type=\"text/javascript\"></script>";
-	    foreach my $less (@_) {
-	    	# TODO: hardcoded
-	    	$ret = $ret . "<link href=\"". $c->uri_for("/static/less/".$less) ."\" type=\"text/less\">";
-	    }
-	}
-	return $ret;
-}
-
-sub _has_lessc {
+sub _less_for_lessc {
     my $c = shift;
-    my $cfg = $c->config->{'CatalystX::Less'}{has_lessc};
-    if(not defined($cfg)) {
-    	my $results = spawn_safe({ argv => [qw{ lessc }], timeout => 2 });
-	    if($results->{error}) {
-	    	$c->log->warn('Cannot use lessc: '.$results->{error});
-		    $c->config->{'CatalystX::Less'}{has_lessc} = 0;
-	    } else {
-		    $c->config->{'CatalystX::Less'}{has_lessc} = 1;
-	    }
+
+    return "<link href=\"". $c->uri_for_combined_less(@_) ."\" type=\"text/css\">";
+}
+sub _less_for_no_lessc {
+    my $c = shift;
+
+    # TODO: configurable?
+    my $lessc_path = $c->config->{'CatalystX::Less'}->{node_js_path} ||
+        "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js";
+    my $ret = "<script src=\"".$lessc_path."\" type=\"text/javascript\"></script>";
+    foreach my $less (@_) {
+        # TODO: hardcoded
+        $ret = $ret . "<link href=\"". $c->uri_for("/static/less/".$less) ."\" type=\"text/less\">";
     }
-    return $cfg;
+    return $ret;
 }
 
 1;
