@@ -8,6 +8,9 @@ package CatalystX::Less;
 
     # in root/wrapper.tt
     <link rel="stylesheet" href="[% c.uri_for_combined_less('base.less', 'fonts.less') %]"></link>
+    
+    # or 
+    [% c.less_for('base.less', 'fonts.less') %]
 
 =head1 JUSTIFICATION
 
@@ -33,6 +36,7 @@ In YourApp.pm file (default config):
     __PACKAGE__->config(
         'CatalystX::Less' => {
             version_path => 1,
+            less_js_path => "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js"
         }
     );
 
@@ -40,6 +44,7 @@ In yourapp.yml (or yourapp_local.yml)
 
     CatalystX::Less:
         version_path: 1
+        less_js_path: https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js
 
 =head2 max_age seconds
 
@@ -65,6 +70,7 @@ set to false
 use Moose::Role;
 use namespace::autoclean;
 use CatalystX::InjectComponent;
+use Spawn::Safe;
 
 after 'setup_components' => sub {
     my $class = shift;
@@ -93,14 +99,53 @@ sub uri_for_combined_less {
     my $encoded = join(";", (map { s/\.less$//; $_;} @lesses));
 
     push(@args, $encoded . ".css");
-    my $action = $c->controller('Less')->action_for('less');
+    
+    my $action = $c->controller('Less')->action_for('less_to_css');
     if ($c->VERSION and (not defined($cfg->{version_path}) or $cfg->{version_path})) {
-        $action = $c->controller('Less')->action_for('less_versioned');
+        $action = $c->controller('Less')->action_for('less_to_css_versioned');
         unshift(@args, $c->VERSION);
     }
 
     my $uri = $c->uri_for($action,@args);
     return $uri;
+    
+}
+
+sub less_for {
+	my $c = shift;
+	my $ret;
+	my $cfg = $c->config->{'CatalystX::Less'};
+	
+	if(not defined($cfg->{node_js_path})) {
+		$c->config->{'CatalystX::Less'}{node_js_path} = "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js";
+	}
+	
+	if(_has_lessc($c)) {
+		$ret = "<link href=\"". $c->uri_for_combined_less(@_) ."\" type=\"text/css\">";
+	} else {
+		# TODO: configurable?
+		$ret = "<script src=\"".$cfg->{node_js_path}."\" type=\"text/javascript\"></script>";
+	    foreach my $less (@_) {
+	    	# TODO: hardcoded
+	    	$ret = $ret . "<link href=\"". $c->uri_for("/static/less/".$less) ."\" type=\"text/less\">";
+	    }
+	}
+	return $ret;
+}
+
+sub _has_lessc {
+    my $c = shift;
+    my $cfg = $c->config->{'CatalystX::Less'}{has_lessc};
+    if(not defined($cfg)) {
+    	my $results = spawn_safe({ argv => [qw{ lessc }], timeout => 2 });
+	    if($results->{error}) {
+	    	$c->log->warn('Cannot use lessc: '.$results->{error});
+		    $c->config->{'CatalystX::Less'}{has_lessc} = 0;
+	    } else {
+		    $c->config->{'CatalystX::Less'}{has_lessc} = 1;
+	    }
+    }
+    return $cfg;
 }
 
 1;

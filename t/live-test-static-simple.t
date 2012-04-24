@@ -4,6 +4,9 @@ use strict;
 use warnings;
 use Test::More;
 
+use Spawn::Safe;
+if(spawn_safe({ argv => [qw{ lessc }], timeout => 2 })->{error}) { plan skip_all => 'Cannot run lessc so tests are meaningless.'; }
+
 # setup library path
 use FindBin qw($Bin);
 use lib "$Bin/lib2";
@@ -13,7 +16,7 @@ BEGIN {
 };
 
 # make sure testapp works
-use ok 'TestApp';
+use_ok('TestApp');
 
 # a live test against TestApp, the test application
 use Test::WWW::Mechanize::Catalyst 'TestApp';
