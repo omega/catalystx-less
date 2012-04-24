@@ -21,8 +21,10 @@ use Test::WWW::Mechanize::Catalyst 'TestApp';
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 
 $mech->get_ok('http://localhost/', 'get main page');
-note($mech->content);
-$mech->content_contains("cloudhead/less.js");
+$mech->content_contains("static/less.js");
 $mech->follow_link_ok({url_regex => qr/\.less$/}, "Can follow the less link");
+$mech->back;
+$mech->get_ok('http://localhost/static/less.js');
+$mech->content_contains("LESS - Leaner CSS v1.3.0", "right less.js");
 
 done_testing;

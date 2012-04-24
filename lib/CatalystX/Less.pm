@@ -36,7 +36,6 @@ In YourApp.pm file (default config):
     __PACKAGE__->config(
         'CatalystX::Less' => {
             version_path => 1,
-            less_js_path => "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js"
         }
     );
 
@@ -44,7 +43,6 @@ In yourapp.yml (or yourapp_local.yml)
 
     CatalystX::Less:
         version_path: 1
-        less_js_path: https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js
 
 =head2 max_age seconds
 
@@ -62,6 +60,17 @@ NOTE that there is nothing for maintaining the old paths.
 
 If you do not have a $VERSION defined, it will be as if the version_path was
 set to false
+
+=head2 no_lessc true|false
+
+If set to false, we will never use or look for C<lessc>, enabling the JS
+fallback by default
+
+=head2 less_js_url /static/less.js
+
+If we have no lessc, or no_lessc is true, we fall back to a javascript
+solution. By default we will serve the less.js version we bundle, but if for
+some reason you want to do that yourself, set the url here
 
 =cut
 
@@ -136,8 +145,8 @@ sub _less_for_no_lessc {
     my $c = shift;
 
     # TODO: configurable?
-    my $lessc_path = $c->config->{'CatalystX::Less'}->{node_js_path} ||
-        "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js";
+    my $lessc_path = $c->config->{'CatalystX::Less'}->{less_js_url} ||
+        $c->uri_for('/static/less.js');
     my $ret = "<script src=\"".$lessc_path."\" type=\"text/javascript\"></script>";
     foreach my $less (@_) {
         # TODO: hardcoded
