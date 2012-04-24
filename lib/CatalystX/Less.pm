@@ -8,6 +8,9 @@ package CatalystX::Less;
 
     # in root/wrapper.tt
     <link rel="stylesheet" href="[% c.uri_for_combined_less('base.less', 'fonts.less') %]"></link>
+    
+    # or 
+    [% c.less_for('base.less', 'fonts.less') %]
 
 =head1 JUSTIFICATION
 
@@ -33,6 +36,7 @@ In YourApp.pm file (default config):
     __PACKAGE__->config(
         'CatalystX::Less' => {
             version_path => 1,
+            less_js_path => "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js"
         }
     );
 
@@ -40,6 +44,7 @@ In yourapp.yml (or yourapp_local.yml)
 
     CatalystX::Less:
         version_path: 1
+        less_js_path: https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js
 
 =head2 max_age seconds
 
@@ -109,12 +114,17 @@ sub uri_for_combined_less {
 sub less_for {
 	my $c = shift;
 	my $ret;
+	my $cfg = $c->config->{'CatalystX::Less'};
+	
+	if(not defined($cfg->{node_js_path})) {
+		$c->config->{'CatalystX::Less'}{node_js_path} = "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js";
+	}
 	
 	if(_has_lessc($c)) {
 		$ret = "<link href=\"". $c->uri_for_combined_less(@_) ."\" type=\"text/css\">";
 	} else {
 		# TODO: configurable?
-		$ret = "<script src=\"https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js\" type=\"text/javascript\"></script>";
+		$ret = "<script src=\"".$cfg->{node_js_path}."\" type=\"text/javascript\"></script>";
 	    foreach my $less (@_) {
 	    	# TODO: hardcoded
 	    	$ret = $ret . "<link href=\"". $c->uri_for("/static/less/".$less) ."\" type=\"text/less\">";
@@ -125,14 +135,17 @@ sub less_for {
 
 sub _has_lessc {
     my $c = shift;
-    my $results = spawn_safe({ argv => [qw{ lessc }], timeout => 2 });
-    my $ret = 1;
-    
-    if($results->{error}) {
-    	$ret = 0;
-    	$c->log->warn('Cannot use lessc: '.$results->{error});
+    my $cfg = $c->config->{'CatalystX::Less'}{has_lessc};
+    if(not defined($cfg)) {
+    	my $results = spawn_safe({ argv => [qw{ lessc }], timeout => 2 });
+	    if($results->{error}) {
+	    	$c->log->warn('Cannot use lessc: '.$results->{error});
+		    $c->config->{'CatalystX::Less'}{has_lessc} = 0;
+	    } else {
+		    $c->config->{'CatalystX::Less'}{has_lessc} = 1;
+	    }
     }
-    return $ret;
+    return $cfg;
 }
 
 1;

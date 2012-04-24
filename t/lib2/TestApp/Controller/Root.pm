@@ -4,7 +4,10 @@ use namespace::autoclean;
 
 BEGIN { extends 'Catalyst::Controller' }
 
-__PACKAGE__->config(namespace => q{});
+__PACKAGE__->config(
+    namespace => q{},
+    less_js_path => "https://github.com/cloudhead/less.js/blob/master/dist/less-1.3.0.min.js"
+);
 
 sub base : Chained('/') PathPart('') CaptureArgs(0) {}
 
